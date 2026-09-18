@@ -297,7 +297,7 @@ export function parseCreateTable(sql: string): { columns: string[]; rowidAlias: 
 		if (/^(CONSTRAINT|PRIMARY|UNIQUE|CHECK|FOREIGN)\b/i.test(def)) continue;
 		const m = /^("([^"]*)"|`([^`]*)`|\[([^\]]*)\]|(\S+))/.exec(def);
 		if (!m) continue;
-		const name = m[2] ?? m[3] ?? m[4] ?? (m[5] as string);
+		const name = m[2] ?? m[3] ?? m[4] ?? m[5] ?? "";
 		const rest = def.slice(m[0].length).trim();
 		const index = columns.length;
 		columns.push(name);

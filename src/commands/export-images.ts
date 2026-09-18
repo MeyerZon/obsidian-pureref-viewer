@@ -112,9 +112,10 @@ function imageBaseName(img: ImageResource): string {
 const RESERVED_NAMES = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i;
 
 function sanitizeName(name: string): string {
-	const clean = name
+	const clean = Array.from(name)
+		.filter((ch) => (ch.codePointAt(0) ?? 0) >= 0x20)
+		.join("")
 		.replace(/[\\/:*?"<>|#^[\]]/g, "-")
-		.replace(/[\u0000-\u001f]/g, "")
 		.replace(/\s+/g, " ")
 		.slice(0, 80)
 		.replace(/^[.\s-]+|[.\s-]+$/g, "");

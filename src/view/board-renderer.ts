@@ -81,7 +81,7 @@ export class BoardRenderer extends Component {
 			this.register(() => observer.disconnect());
 		}
 		const fonts = (this.viewportEl.ownerDocument as Document & { fonts?: FontFaceSet }).fonts;
-		if (fonts?.ready) {
+		if (fonts) {
 			void fonts.ready.then(() => {
 				if (!this.alive) return;
 				this.measuredNotes = undefined;

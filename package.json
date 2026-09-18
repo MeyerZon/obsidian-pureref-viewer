@@ -15,12 +15,12 @@
 	"keywords": ["obsidian", "pureref"],
 	"license": "MIT",
 	"devDependencies": {
-		"@types/node": "^22.15.17",
+		"@types/node": "22.20.1",
 		"esbuild": "0.25.5",
-		"eslint": "^9.39.4",
-		"eslint-plugin-obsidianmd": "^0.4.0",
-		"obsidian": "latest",
-		"typescript": "^5.8.3",
-		"typescript-eslint": "^8.59.1"
+		"eslint": "9.39.5",
+		"eslint-plugin-obsidianmd": "0.4.2",
+		"obsidian": "1.13.1",
+		"typescript": "5.9.3",
+		"typescript-eslint": "8.70.0"
 	}
 }
