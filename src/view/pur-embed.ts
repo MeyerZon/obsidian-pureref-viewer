@@ -96,6 +96,7 @@ export class PurEmbed extends MarkdownRenderChild {
 			wheelRequiresModifier: true,
 		});
 		this.addChild(this.renderer);
+		this.renderer.load();
 
 		const toolbar = containerEl.createDiv({ cls: "pureref-embed-toolbar" });
 		this.toolbarButton(toolbar, "maximize", "Fit board", () => this.renderer?.fitAll(true));

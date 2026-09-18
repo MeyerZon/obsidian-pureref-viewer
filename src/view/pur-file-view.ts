@@ -95,17 +95,23 @@ export class PurFileView extends FileView {
 		}
 		this.board = board;
 		const s = this.plugin.settings;
-		this.renderer = new BoardRenderer(this.ensureHost(), board, {
-			showNotes: s.showNotes,
-			showDrawings: s.showDrawings,
-			background: s.background,
-			initialView: s.initialView,
-			wheelRequiresModifier: false,
-			initialState: this.pendingState,
-			onViewChange: () => this.app.workspace.requestSaveLayout(),
-		});
-		this.pendingState = null;
-		this.addChild(this.renderer);
+		try {
+			this.renderer = new BoardRenderer(this.ensureHost(), board, {
+				showNotes: s.showNotes,
+				showDrawings: s.showDrawings,
+				background: s.background,
+				initialView: s.initialView,
+				wheelRequiresModifier: false,
+				initialState: this.pendingState,
+				onViewChange: () => this.app.workspace.requestSaveLayout(),
+			});
+			this.pendingState = null;
+			this.addChild(this.renderer);
+			// addChild only loads the child when this view is loaded; make rendering unconditional.
+			this.renderer.load();
+		} catch (e) {
+			this.showError(e, file);
+		}
 	}
 
 	override async onUnloadFile(_file: TFile): Promise<void> {
@@ -167,10 +173,13 @@ export class PurFileView extends FileView {
 	private showError(error: unknown, file: TFile): void {
 		const host = this.ensureHost();
 		host.empty();
-		const message = error instanceof Error ? error.message : String(error);
+		const message = error instanceof Error ? (error.stack ?? error.message) : String(error);
 		const panel = host.createDiv({ cls: "pureref-error" });
 		panel.createDiv({ cls: "pureref-error-title", text: `Could not open ${file.name}` });
 		panel.createDiv({ cls: "pureref-error-message", text: message });
+		if (this.board && this.board.warnings.length > 0) {
+			panel.createDiv({ cls: "pureref-error-message", text: this.board.warnings.join("\n") });
+		}
 		if (canOpenExternally(this.app)) {
 			const button = panel.createEl("button", { cls: "mod-cta", text: "Open in PureRef" });
 			this.registerDomEvent(button, "click", () => void openInDefaultApp(this.app, file.path));

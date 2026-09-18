@@ -264,7 +264,35 @@
 	pointer-events: none;
 }
 
+/* ---- Status line ----------------------------------------------------------------------- */
+
+.pureref-status {
+	position: absolute;
+	left: var(--size-4-2);
+	bottom: var(--size-4-2);
+	padding: var(--size-2-1) var(--size-4-2);
+	border-radius: var(--radius-s);
+	background-color: rgba(0, 0, 0, 0.45);
+	color: #d0d0d0;
+	font-family: var(--font-interface);
+	font-size: var(--font-ui-smaller);
+	pointer-events: none;
+	z-index: 2;
+}
+
 /* ---- Errors ---------------------------------------------------------------------------- */
+
+.pureref-error-overlay {
+	position: absolute;
+	left: var(--size-4-4);
+	top: var(--size-4-4);
+	max-width: 80%;
+	border-radius: var(--radius-m);
+	background-color: var(--background-primary);
+	box-shadow: var(--shadow-s);
+	z-index: 3;
+	user-select: text;
+}
 
 .pureref-error {
 	display: flex;

@@ -41,6 +41,8 @@ export class BoardRenderer extends Component {
 	private measuredNotes: Rect | null | undefined = undefined;
 	private initialViewApplied = false;
 	private alive = false;
+	private statusEl: HTMLElement | null = null;
+	private renderedCount = 0;
 
 	constructor(hostEl: HTMLElement, board: Board, options: RendererOptions) {
 		super();
@@ -54,25 +56,40 @@ export class BoardRenderer extends Component {
 		this.viewportEl = this.hostEl.createDiv({ cls: "pureref-viewport" });
 		this.viewportEl.addClass(this.options.background === "theme" ? "pureref-bg-theme" : "pureref-bg-pureref");
 		this.worldEl = this.viewportEl.createDiv({ cls: "pureref-world" });
+		this.statusEl = this.viewportEl.createDiv({ cls: "pureref-status" });
 		this.panzoom = new PanZoom(this.viewportEl, this.worldEl, {
 			minScale: MIN_SCALE,
 			maxScale: MAX_SCALE,
 			wheelRequiresModifier: this.options.wheelRequiresModifier,
 			onChange: (state, user) => {
+				this.updateStatus(state);
 				if (user) this.options.onViewChange?.(state);
 			},
 		});
 		this.addChild(this.panzoom);
+		// Guarantee the controller is live even if this component was attached to an unloaded parent.
+		this.panzoom.load();
 
 		let rendered = 0;
+		const failures: string[] = [];
 		for (const item of this.board.items) {
-			if (this.renderItem(item)) rendered++;
+			try {
+				if (this.renderItem(item)) rendered++;
+			} catch (e) {
+				failures.push(`${item.kind} ${item.id}: ${e instanceof Error ? e.message : String(e)}`);
+			}
 		}
-		if (rendered === 0) {
+		this.renderedCount = rendered;
+		if (failures.length > 0) {
+			this.board.warnings.push(...failures.map((f) => `Could not render ${f}`));
+			this.showProblem(`${failures.length} item(s) could not be rendered:\n${failures.slice(0, 5).join("\n")}`);
+		}
+		if (rendered === 0 && failures.length === 0) {
 			this.viewportEl.createDiv({ cls: "pureref-empty", text: "This board is empty." });
 		}
 
 		this.ensureInitialView();
+		this.updateStatus(this.panzoom.getState());
 		// The host may not be laid out yet (embeds, background tabs): retry once it gets a size.
 		const win = this.viewportEl.ownerDocument.defaultView ?? window;
 		if (typeof win.ResizeObserver === "function") {
@@ -101,6 +118,30 @@ export class BoardRenderer extends Component {
 		this.viewportEl?.detach();
 	}
 
+	// ---- Status / diagnostics --------------------------------------------------------------
+
+	private updateStatus(state: PanZoomState): void {
+		if (!this.statusEl) return;
+		const counts: string[] = [];
+		const n = (kind: string) => this.board.items.filter((i) => i.kind === kind).length;
+		const images = n("image");
+		const notes = n("note");
+		const drawings = n("drawing");
+		if (images) counts.push(`${images} image${images === 1 ? "" : "s"}`);
+		if (notes) counts.push(`${notes} note${notes === 1 ? "" : "s"}`);
+		if (drawings) counts.push(`${drawings} drawing${drawings === 1 ? "" : "s"}`);
+		const { width, height } = this.panzoom.viewportSize();
+		const zoom = `${Math.round(state.scale * 1000) / 10}%`;
+		const fit = this.initialViewApplied ? "" : ` · waiting for layout (${width}×${height})`;
+		this.statusEl.setText(`${counts.join(" · ")} · ${this.renderedCount} shown · zoom ${zoom}${fit}`);
+	}
+
+	private showProblem(message: string): void {
+		const panel = this.viewportEl.createDiv({ cls: "pureref-error pureref-error-overlay" });
+		panel.createDiv({ cls: "pureref-error-title", text: "PureRef Viewer ran into a problem" });
+		panel.createDiv({ cls: "pureref-error-message", text: message });
+	}
+
 	// ---- View control ----------------------------------------------------------------------
 
 	/** Applies the initial view once the viewport has a size. Safe to call repeatedly (e.g. on resize). */
@@ -108,6 +149,16 @@ export class BoardRenderer extends Component {
 		if (this.initialViewApplied || !this.alive) return;
 		const { width, height } = this.panzoom.viewportSize();
 		if (width <= 0 || height <= 0) return;
+		try {
+			this.applyInitialView();
+		} catch (e) {
+			this.showProblem(`Initial view failed: ${e instanceof Error ? e.stack ?? e.message : String(e)}`);
+			this.initialViewApplied = true;
+		}
+		this.updateStatus(this.panzoom.getState());
+	}
+
+	private applyInitialView(): void {
 		const saved = this.options.initialState;
 		if (saved) {
 			this.panzoom.setState(saved);
