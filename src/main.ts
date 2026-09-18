@@ -6,7 +6,7 @@ import { PurFileView, VIEW_TYPE_PUREREF } from "./view/pur-file-view.ts";
 import { registerPurEmbeds } from "./view/pur-embed.ts";
 
 export default class PureRefPlugin extends Plugin {
-	settings: PureRefSettings = { ...DEFAULT_SETTINGS };
+	override settings: PureRefSettings = { ...DEFAULT_SETTINGS };
 
 	override async onload(): Promise<void> {
 		await this.loadSettings();
