@@ -5,7 +5,7 @@ import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 
-const DEFAULT_VAULT = "C:\OldBackUp\My Programming Stuff\the-slop-engine\cache\uploads\PUREREF-INTEGRATION";
+const DEFAULT_VAULT = "C:/OldBackUp/My Programming Stuff/the-slop-engine/cache/uploads/PUREREF-INTEGRATION";
 const PLUGIN_ID = "pureref-viewer";
 const ARTIFACTS = ["main.js", "manifest.json", "styles.css"];
 
