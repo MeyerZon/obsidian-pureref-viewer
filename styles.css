@@ -1,0 +1,287 @@
+/* PureRef Viewer — all classes are prefixed with .pureref- */
+
+/* ---- Tab view ------------------------------------------------------------------------- */
+
+.workspace-leaf-content[data-type="pureref-board"] .view-content {
+	padding: 0;
+	position: relative;
+	overflow: hidden;
+}
+
+.pureref-host {
+	position: absolute;
+	inset: 0;
+}
+
+/* ---- Viewport / world ----------------------------------------------------------------- */
+
+.pureref-viewport {
+	--pureref-canvas-bg: var(--background-secondary);
+	--pureref-note-bg: rgba(20, 20, 20, 0.82);
+	--pureref-note-fg: #ececec;
+	--pureref-missing-fg: var(--text-muted);
+	position: absolute;
+	inset: 0;
+	overflow: hidden;
+	touch-action: none;
+	user-select: none;
+	-webkit-user-select: none;
+	cursor: grab;
+	background-color: var(--pureref-canvas-bg);
+}
+
+.pureref-viewport.pureref-bg-pureref {
+	--pureref-canvas-bg: #2b2b2b;
+}
+
+.pureref-viewport.pureref-dragging {
+	cursor: grabbing;
+}
+
+.pureref-world {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 0;
+	height: 0;
+	transform-origin: 0 0;
+	will-change: transform;
+}
+
+.pureref-item {
+	position: absolute;
+	left: 0;
+	top: 0;
+	transform-origin: 0 0;
+}
+
+.pureref-item-note {
+	width: max-content;
+	max-width: 4000px;
+}
+
+.pureref-empty {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--text-muted);
+	font-size: var(--font-ui-medium);
+}
+
+/* ---- Images ---------------------------------------------------------------------------- */
+
+.pureref-image-frame {
+	position: absolute;
+	left: 0;
+	top: 0;
+	transform-origin: 0 0;
+	overflow: hidden;
+	background-color: rgba(0, 0, 0, 0.15);
+}
+
+.pureref-image {
+	display: block;
+	width: 100%;
+	height: 100%;
+	image-orientation: none;
+	pointer-events: none;
+}
+
+.pureref-pixelated {
+	image-rendering: pixelated;
+}
+
+.pureref-grayscale {
+	filter: grayscale(1);
+}
+
+.pureref-missing {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 16px;
+	border: 4px dashed var(--pureref-missing-fg);
+	color: var(--pureref-missing-fg);
+	font-family: var(--font-interface);
+	font-size: 32px;
+	text-align: center;
+	overflow-wrap: anywhere;
+}
+
+/* ---- Notes ----------------------------------------------------------------------------- */
+
+.pureref-note {
+	font-family: "Open Sans", var(--font-interface);
+	font-size: 22px;
+	font-weight: 400;
+	line-height: 1.35;
+	color: var(--pureref-note-fg);
+	background-color: var(--pureref-note-bg);
+	border-radius: 8px;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+	box-sizing: content-box;
+}
+
+.pureref-note-comfortable {
+	padding: 14px 18px;
+}
+
+.pureref-note-compact {
+	padding: 4px 8px;
+}
+
+.pureref-note-p {
+	margin: 0;
+	min-height: 1.35em;
+}
+
+.pureref-note-heading {
+	font-weight: 700;
+}
+
+.pureref-note-list {
+	margin: 0;
+	padding-left: 1.4em;
+}
+
+.pureref-note-li {
+	margin: 0;
+}
+
+.pureref-li-checked::marker {
+	content: "\2612  ";
+}
+
+.pureref-li-unchecked::marker {
+	content: "\2610  ";
+}
+
+.pureref-align-center {
+	text-align: center;
+}
+
+.pureref-align-right {
+	text-align: right;
+}
+
+.pureref-align-justify {
+	text-align: justify;
+}
+
+.pureref-b {
+	font-weight: 700;
+}
+
+.pureref-i {
+	font-style: italic;
+}
+
+.pureref-u {
+	text-decoration: underline;
+}
+
+.pureref-s {
+	text-decoration: line-through;
+}
+
+.pureref-u.pureref-s {
+	text-decoration: underline line-through;
+}
+
+/* ---- Drawings -------------------------------------------------------------------------- */
+
+.pureref-drawing-box {
+	position: absolute;
+	left: 0;
+	top: 0;
+	pointer-events: none;
+}
+
+.pureref-drawing-box svg {
+	display: block;
+	width: 100%;
+	height: 100%;
+	overflow: visible;
+}
+
+/* ---- Embeds ---------------------------------------------------------------------------- */
+
+.pureref-embed {
+	position: relative;
+	height: var(--pureref-embed-height, 400px);
+	margin: var(--size-4-2) 0;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	overflow: hidden;
+	background-color: var(--background-secondary);
+}
+
+.pureref-embed .pureref-host {
+	inset: 0;
+}
+
+.pureref-embed-toolbar {
+	position: absolute;
+	top: var(--size-4-2);
+	right: var(--size-4-2);
+	display: flex;
+	gap: var(--size-2-1);
+	padding: var(--size-2-1);
+	border-radius: var(--radius-m);
+	background-color: var(--background-primary);
+	box-shadow: var(--shadow-s);
+	opacity: 0.35;
+	transition: opacity 150ms ease;
+	z-index: 1;
+}
+
+.pureref-embed:hover .pureref-embed-toolbar,
+.pureref-embed:focus-within .pureref-embed-toolbar {
+	opacity: 1;
+}
+
+.pureref-embed-btn {
+	padding: var(--size-2-1);
+	cursor: pointer;
+}
+
+.pureref-embed-caption {
+	position: absolute;
+	left: var(--size-4-2);
+	bottom: var(--size-4-2);
+	padding: var(--size-2-1) var(--size-4-2);
+	border-radius: var(--radius-s);
+	background-color: var(--background-primary);
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	opacity: 0.6;
+	pointer-events: none;
+}
+
+/* ---- Errors ---------------------------------------------------------------------------- */
+
+.pureref-error {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: var(--size-4-2);
+	padding: var(--size-4-4);
+	color: var(--text-normal);
+}
+
+.pureref-error-title {
+	font-weight: var(--font-semibold);
+}
+
+.pureref-error-message {
+	color: var(--text-muted);
+	white-space: pre-wrap;
+}
+
+.pureref-error-embed {
+	height: 100%;
+	justify-content: center;
+}
