@@ -1,0 +1,26 @@
+{
+	"name": "pureref-viewer",
+	"version": "0.1.0",
+	"description": "View PureRef reference boards (.pur) inside Obsidian and embed them in notes.",
+	"type": "module",
+	"private": true,
+	"scripts": {
+		"dev": "node esbuild.config.mjs",
+		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+		"lint": "eslint .",
+		"test": "node --test \"test/**/*.test.ts\"",
+		"install-vault": "node scripts/install-vault.mjs",
+		"version": "node scripts/version-bump.mjs && git add manifest.json versions.json"
+	},
+	"keywords": ["obsidian", "pureref"],
+	"license": "MIT",
+	"devDependencies": {
+		"@types/node": "^22.15.17",
+		"esbuild": "0.25.5",
+		"eslint": "^9.39.4",
+		"eslint-plugin-obsidianmd": "^0.4.0",
+		"obsidian": "latest",
+		"typescript": "^5.8.3",
+		"typescript-eslint": "^8.59.1"
+	}
+}

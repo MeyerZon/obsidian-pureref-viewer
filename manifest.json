@@ -1,0 +1,9 @@
+{
+	"id": "pureref-viewer",
+	"name": "PureRef Viewer",
+	"version": "0.1.0",
+	"minAppVersion": "1.7.2",
+	"description": "View PureRef reference boards (.pur) inside Obsidian and embed them in notes.",
+	"author": "Yoni",
+	"isDesktopOnly": false
+}
