@@ -37,10 +37,7 @@ export class PanZoom extends Component {
 	private readonly viewportEl: HTMLElement;
 	private readonly worldEl: HTMLElement;
 	private readonly opts: PanZoomOptions;
-	/** Window owning the viewport (popout windows have their own animation frame clock). */
-	private readonly win: Window;
 	private state: PanZoomState = { x: 0, y: 0, scale: 1 };
-	private frame: number | null = null;
 	private readonly pointers = new Map<number, { x: number; y: number }>();
 	private pinchDistance = 0;
 	private dragging = false;
@@ -54,7 +51,6 @@ export class PanZoom extends Component {
 		this.viewportEl = viewportEl;
 		this.worldEl = worldEl;
 		this.opts = opts;
-		this.win = viewportEl.ownerDocument.defaultView ?? window;
 	}
 
 	/** True right after a drag ended, so click handlers can ignore the release. */
@@ -73,10 +69,6 @@ export class PanZoom extends Component {
 	}
 
 	override onunload(): void {
-		if (this.frame !== null) {
-			this.win.cancelAnimationFrame(this.frame);
-			this.frame = null;
-		}
 		this.pointers.clear();
 	}
 
@@ -88,7 +80,8 @@ export class PanZoom extends Component {
 		const scale = this.clampScale(state.scale);
 		this.state = { x: state.x, y: state.y, scale };
 		if (userInitiated) this.userInteracted = true;
-		this.schedule();
+		// Applied synchronously so DOM measurements taken right after always match the state.
+		this.apply();
 		this.opts.onChange?.(this.getState(), userInitiated);
 	}
 
@@ -166,14 +159,6 @@ export class PanZoom extends Component {
 	private clampScale(s: number): number {
 		if (!Number.isFinite(s) || s <= 0) return this.opts.minScale;
 		return Math.min(this.opts.maxScale, Math.max(this.opts.minScale, s));
-	}
-
-	private schedule(): void {
-		if (this.frame !== null) return;
-		this.frame = this.win.requestAnimationFrame(() => {
-			this.frame = null;
-			this.apply();
-		});
 	}
 
 	private apply(): void {
