@@ -1,4 +1,4 @@
-import { Notice, Plugin, TFile, type Menu } from "obsidian";
+import { Events, Notice, Plugin, TFile, debounce, type Menu } from "obsidian";
 import { exportBoardImages } from "./commands/export-images.ts";
 import { DEFAULT_SETTINGS, PureRefSettingTab, sanitizeSettings, type PureRefSettings } from "./settings.ts";
 import { canOpenExternally, canRevealInFolder, openInDefaultApp, revealInFolder } from "./util/open-external.ts";
@@ -7,6 +7,9 @@ import { registerPurEmbeds } from "./view/pur-embed.ts";
 
 export default class PureRefPlugin extends Plugin {
 	override settings: PureRefSettings = { ...DEFAULT_SETTINGS };
+	/** Fires "change" after render-affecting settings were saved; embeds re-render on it. */
+	readonly settingsEvents = new Events();
+	private readonly refreshSoon = debounce(() => this.refreshViews(), 400, true);
 
 	override async onload(): Promise<void> {
 		await this.loadSettings();
@@ -31,9 +34,15 @@ export default class PureRefPlugin extends Plugin {
 		this.settings = sanitizeSettings(await this.loadData());
 	}
 
+	/** Persists settings without touching open views (for settings that do not affect rendering). */
 	async saveSettings(): Promise<void> {
 		await this.saveData(this.settings);
-		this.refreshViews();
+	}
+
+	/** Persists settings and re-renders open boards and embeds (debounced). */
+	async saveSettingsAndRefresh(): Promise<void> {
+		await this.saveData(this.settings);
+		this.refreshSoon();
 	}
 
 	/** Re-renders every open board so new settings take effect. */
@@ -41,6 +50,7 @@ export default class PureRefPlugin extends Plugin {
 		for (const leaf of this.app.workspace.getLeavesOfType(VIEW_TYPE_PUREREF)) {
 			if (leaf.view instanceof PurFileView) void leaf.view.reload();
 		}
+		this.settingsEvents.trigger("change");
 	}
 
 	private activeBoardView(): PurFileView | null {

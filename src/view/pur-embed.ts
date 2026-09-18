@@ -25,7 +25,8 @@ export class PurEmbed extends MarkdownRenderChild {
 	private readonly file: TFile;
 	private readonly params: URLSearchParams;
 	private renderer: BoardRenderer | null = null;
-	private loading: Promise<void> | null = null;
+	private generation = 0;
+	private tornDown = false;
 
 	constructor(plugin: PureRefPlugin, file: TFile, containerEl: HTMLElement, subpath?: string) {
 		super(containerEl);
@@ -34,13 +35,20 @@ export class PurEmbed extends MarkdownRenderChild {
 		this.params = parseEmbedParams(subpath);
 	}
 
-	/** Called by Obsidian (embed registry) or by the post-processor fallback. */
+	override onload(): void {
+		// Re-render when render-affecting settings change while the note stays open.
+		this.registerEvent(this.plugin.settingsEvents.on("change", () => void this.loadFile()));
+	}
+
+	/** Called by Obsidian (embed registry, possibly again after the file changes) or by the fallback. */
 	loadFile(): Promise<void> {
-		if (!this.loading) this.loading = this.render();
-		return this.loading;
+		if (this.tornDown) return Promise.resolve();
+		return this.render();
 	}
 
 	override onunload(): void {
+		this.tornDown = true;
+		this.generation++;
 		this.clear();
 	}
 
@@ -54,6 +62,7 @@ export class PurEmbed extends MarkdownRenderChild {
 
 	private async render(): Promise<void> {
 		const { containerEl, plugin, file } = this;
+		const generation = ++this.generation;
 		this.clear();
 		containerEl.addClass("pureref-embed");
 		const heightParam = Number(this.params.get("height"));
@@ -64,9 +73,11 @@ export class PurEmbed extends MarkdownRenderChild {
 		try {
 			buffer = await plugin.app.vault.readBinary(file);
 		} catch (e) {
+			if (this.tornDown || generation !== this.generation) return;
 			this.showError(`Could not read ${file.name}: ${e instanceof Error ? e.message : String(e)}`);
 			return;
 		}
+		if (this.tornDown || generation !== this.generation) return;
 		let board;
 		try {
 			board = parsePur(buffer);

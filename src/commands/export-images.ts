@@ -109,10 +109,14 @@ function imageBaseName(img: ImageResource): string {
 	return clean || `image-${img.id}`;
 }
 
+const RESERVED_NAMES = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i;
+
 function sanitizeName(name: string): string {
-	return name
+	const clean = name
 		.replace(/[\\/:*?"<>|#^[\]]/g, "-")
+		.replace(/[\u0000-\u001f]/g, "")
 		.replace(/\s+/g, " ")
-		.replace(/^[.\s-]+|[.\s-]+$/g, "")
-		.slice(0, 80);
+		.slice(0, 80)
+		.replace(/^[.\s-]+|[.\s-]+$/g, "");
+	return RESERVED_NAMES.test(clean) ? `${clean}-file` : clean;
 }

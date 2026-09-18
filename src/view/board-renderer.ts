@@ -73,7 +73,14 @@ export class BoardRenderer extends Component {
 		}
 
 		this.ensureInitialView();
-		const fonts = (document as Document & { fonts?: FontFaceSet }).fonts;
+		// The host may not be laid out yet (embeds, background tabs): retry once it gets a size.
+		const win = this.viewportEl.ownerDocument.defaultView ?? window;
+		if (typeof win.ResizeObserver === "function") {
+			const observer = new win.ResizeObserver(() => this.ensureInitialView());
+			observer.observe(this.viewportEl);
+			this.register(() => observer.disconnect());
+		}
+		const fonts = (this.viewportEl.ownerDocument as Document & { fonts?: FontFaceSet }).fonts;
 		if (fonts?.ready) {
 			void fonts.ready.then(() => {
 				if (!this.alive) return;
@@ -201,7 +208,6 @@ export class BoardRenderer extends Component {
 		const styles: Partial<CSSStyleDeclaration> = { transform };
 		if (item.opacity < 1) styles.opacity = String(item.opacity);
 		el.setCssStyles(styles);
-		if (item.name) el.setAttribute("aria-label", item.name);
 		return el;
 	}
 
@@ -228,7 +234,6 @@ export class BoardRenderer extends Component {
 					alt: item.name ?? "",
 					width: String(width),
 					height: String(height),
-					loading: "lazy",
 					decoding: "async",
 				},
 			});
@@ -242,6 +247,7 @@ export class BoardRenderer extends Component {
 		}
 
 		this.registerDomEvent(itemEl, "dblclick", (e) => {
+			if (this.panzoom.consumedClick()) return;
 			e.preventDefault();
 			this.panzoom.fitRect(imageItemRect(item), 48, true);
 		});
@@ -271,9 +277,9 @@ export class BoardRenderer extends Component {
 	private objectUrlFor(res: ImageResource): string {
 		const existing = this.objectUrls.get(res.id);
 		if (existing) return existing;
-		const data = res.data as Uint8Array;
-		// Copy the bytes so the Blob does not pin the whole file buffer.
-		const blob = new Blob([data.slice()], { type: res.mime });
+		// Blob copies its input, so this does not pin the parsed database buffer.
+		const part: BlobPart = res.data as Uint8Array<ArrayBuffer>;
+		const blob = new Blob([part], { type: res.mime });
 		const url = URL.createObjectURL(blob);
 		this.objectUrls.set(res.id, url);
 		return url;

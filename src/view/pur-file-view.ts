@@ -17,6 +17,7 @@ export class PurFileView extends FileView {
 	private board: Board | null = null;
 	private pendingState: PanZoomState | null = null;
 	private loadToken = 0;
+	private actionsAdded = false;
 
 	constructor(leaf: WorkspaceLeaf, plugin: PureRefPlugin) {
 		super(leaf);
@@ -43,18 +44,29 @@ export class PurFileView extends FileView {
 		return this.board;
 	}
 
-	protected override async onOpen(): Promise<void> {
-		await super.onOpen();
-		this.contentEl.addClass("pureref-view-content");
-		this.hostEl = this.contentEl.createDiv({ cls: "pureref-host" });
-
-		this.addAction("maximize", "Fit board to view", () => this.renderer?.fitAll(true));
-		this.addAction("scan", "Zoom to actual size", () => this.renderer?.zoomActual(true));
-		if (canOpenExternally(this.app)) {
-			this.addAction("external-link", "Open in PureRef", () => {
-				if (this.file) void openInDefaultApp(this.app, this.file.path);
-			});
+	/** Creates the board container synchronously so `onLoadFile` can never observe a missing host. */
+	private ensureHost(): HTMLElement {
+		if (!this.hostEl || !this.hostEl.isConnected) {
+			this.contentEl.empty();
+			this.contentEl.addClass("pureref-view-content");
+			this.hostEl = this.contentEl.createDiv({ cls: "pureref-host" });
 		}
+		return this.hostEl;
+	}
+
+	protected override async onOpen(): Promise<void> {
+		this.ensureHost();
+		if (!this.actionsAdded) {
+			this.actionsAdded = true;
+			this.addAction("maximize", "Fit board to view", () => this.renderer?.fitAll(true));
+			this.addAction("scan", "Zoom to actual size", () => this.renderer?.zoomActual(true));
+			if (canOpenExternally(this.app)) {
+				this.addAction("external-link", "Open in PureRef", () => {
+					if (this.file) void openInDefaultApp(this.app, this.file.path);
+				});
+			}
+		}
+		await super.onOpen();
 
 		this.registerEvent(
 			this.app.vault.on("modify", (file) => {
@@ -78,13 +90,12 @@ export class PurFileView extends FileView {
 		try {
 			board = parsePur(buffer);
 		} catch (e) {
-			this.showError(e, file);
+			if (token === this.loadToken && this.file === file) this.showError(e, file);
 			return;
 		}
 		this.board = board;
-		if (!this.hostEl) return;
 		const s = this.plugin.settings;
-		this.renderer = new BoardRenderer(this.hostEl, board, {
+		this.renderer = new BoardRenderer(this.ensureHost(), board, {
 			showNotes: s.showNotes,
 			showDrawings: s.showDrawings,
 			background: s.background,
@@ -105,6 +116,7 @@ export class PurFileView extends FileView {
 	protected override async onClose(): Promise<void> {
 		this.loadToken++;
 		this.clearBoard();
+		this.hostEl = null;
 		await super.onClose();
 	}
 
@@ -153,10 +165,10 @@ export class PurFileView extends FileView {
 	}
 
 	private showError(error: unknown, file: TFile): void {
-		if (!this.hostEl) return;
-		this.hostEl.empty();
+		const host = this.ensureHost();
+		host.empty();
 		const message = error instanceof Error ? error.message : String(error);
-		const panel = this.hostEl.createDiv({ cls: "pureref-error" });
+		const panel = host.createDiv({ cls: "pureref-error" });
 		panel.createDiv({ cls: "pureref-error-title", text: `Could not open ${file.name}` });
 		panel.createDiv({ cls: "pureref-error-message", text: message });
 		if (canOpenExternally(this.app)) {

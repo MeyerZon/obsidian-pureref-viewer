@@ -122,7 +122,7 @@
 	border-radius: 8px;
 	white-space: pre-wrap;
 	overflow-wrap: break-word;
-	box-sizing: content-box;
+	box-sizing: border-box;
 }
 
 .pureref-note-comfortable {
@@ -209,7 +209,10 @@
 
 /* ---- Embeds ---------------------------------------------------------------------------- */
 
+/* Obsidian's embed container is an inline <span>; force a block box so height/overflow apply. */
 .pureref-embed {
+	display: block;
+	width: 100%;
 	position: relative;
 	height: var(--pureref-embed-height, 400px);
 	margin: var(--size-4-2) 0;

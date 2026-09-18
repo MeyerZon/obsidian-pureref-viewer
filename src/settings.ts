@@ -73,7 +73,7 @@ export class PureRefSettingTab extends PluginSettingTab {
 					.setValue(settings.initialView)
 					.onChange(async (value) => {
 						settings.initialView = value as InitialView;
-						await this.plugin.saveSettings();
+						await this.plugin.saveSettingsAndRefresh();
 					}),
 			);
 
@@ -86,7 +86,7 @@ export class PureRefSettingTab extends PluginSettingTab {
 					.setValue(settings.background)
 					.onChange(async (value) => {
 						settings.background = value as BoardBackground;
-						await this.plugin.saveSettings();
+						await this.plugin.saveSettingsAndRefresh();
 					}),
 			);
 
@@ -96,7 +96,7 @@ export class PureRefSettingTab extends PluginSettingTab {
 			.addToggle((t) =>
 				t.setValue(settings.showNotes).onChange(async (value) => {
 					settings.showNotes = value;
-					await this.plugin.saveSettings();
+					await this.plugin.saveSettingsAndRefresh();
 				}),
 			);
 
@@ -106,7 +106,7 @@ export class PureRefSettingTab extends PluginSettingTab {
 			.addToggle((t) =>
 				t.setValue(settings.showDrawings).onChange(async (value) => {
 					settings.showDrawings = value;
-					await this.plugin.saveSettings();
+					await this.plugin.saveSettingsAndRefresh();
 				}),
 			);
 
@@ -123,7 +123,7 @@ export class PureRefSettingTab extends PluginSettingTab {
 						const n = Number(value);
 						if (!Number.isFinite(n) || n <= 0) return;
 						settings.embedHeight = clampHeight(n);
-						await this.plugin.saveSettings();
+						await this.plugin.saveSettingsAndRefresh();
 					}),
 			);
 

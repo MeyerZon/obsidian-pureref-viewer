@@ -37,11 +37,16 @@ export class PanZoom extends Component {
 	private readonly viewportEl: HTMLElement;
 	private readonly worldEl: HTMLElement;
 	private readonly opts: PanZoomOptions;
+	/** Window owning the viewport (popout windows have their own animation frame clock). */
+	private readonly win: Window;
 	private state: PanZoomState = { x: 0, y: 0, scale: 1 };
 	private frame: number | null = null;
 	private readonly pointers = new Map<number, { x: number; y: number }>();
 	private pinchDistance = 0;
 	private dragging = false;
+	private dragStart = { x: 0, y: 0 };
+	private dragMoved = false;
+	private lastDragEnd = 0;
 	userInteracted = false;
 
 	constructor(viewportEl: HTMLElement, worldEl: HTMLElement, opts: PanZoomOptions) {
@@ -49,6 +54,12 @@ export class PanZoom extends Component {
 		this.viewportEl = viewportEl;
 		this.worldEl = worldEl;
 		this.opts = opts;
+		this.win = viewportEl.ownerDocument.defaultView ?? window;
+	}
+
+	/** True right after a drag ended, so click handlers can ignore the release. */
+	consumedClick(): boolean {
+		return this.dragMoved || Date.now() - this.lastDragEnd < 150;
 	}
 
 	override onload(): void {
@@ -63,7 +74,7 @@ export class PanZoom extends Component {
 
 	override onunload(): void {
 		if (this.frame !== null) {
-			cancelAnimationFrame(this.frame);
+			this.win.cancelAnimationFrame(this.frame);
 			this.frame = null;
 		}
 		this.pointers.clear();
@@ -159,7 +170,7 @@ export class PanZoom extends Component {
 
 	private schedule(): void {
 		if (this.frame !== null) return;
-		this.frame = requestAnimationFrame(() => {
+		this.frame = this.win.requestAnimationFrame(() => {
 			this.frame = null;
 			this.apply();
 		});
@@ -185,21 +196,30 @@ export class PanZoom extends Component {
 		this.zoomBy(factor, p.x, p.y, true);
 	};
 
+	/**
+	 * Pointer capture is taken lazily, once a drag really starts. Capturing on pointerdown would
+	 * retarget the compatibility click/dblclick events to the viewport and break double-click on items.
+	 */
+	private capture(pointerId: number): void {
+		try {
+			if (!this.viewportEl.hasPointerCapture(pointerId)) this.viewportEl.setPointerCapture(pointerId);
+		} catch {
+			// Pointer capture can fail for synthetic events; dragging still works within the element.
+		}
+	}
+
 	private readonly onPointerDown = (e: PointerEvent): void => {
 		if (e.button !== 0 && e.button !== 1) return;
 		if ((e.target as HTMLElement | null)?.closest?.("button, a, input")) return;
 		if (e.button === 1) e.preventDefault();
 		this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-		try {
-			this.viewportEl.setPointerCapture(e.pointerId);
-		} catch {
-			// Pointer capture can fail for synthetic events; dragging still works within the element.
-		}
 		if (this.pointers.size === 1) {
 			this.dragging = true;
-			this.viewportEl.addClass("pureref-dragging");
+			this.dragMoved = false;
+			this.dragStart = { x: e.clientX, y: e.clientY };
 		} else if (this.pointers.size === 2) {
 			this.pinchDistance = this.pointerDistance();
+			for (const id of this.pointers.keys()) this.capture(id);
 		}
 	};
 
@@ -209,6 +229,12 @@ export class PanZoom extends Component {
 		const cur = { x: e.clientX, y: e.clientY };
 		this.pointers.set(e.pointerId, cur);
 		if (this.pointers.size === 1 && this.dragging) {
+			if (!this.dragMoved) {
+				if (Math.hypot(cur.x - this.dragStart.x, cur.y - this.dragStart.y) < 3) return;
+				this.dragMoved = true;
+				this.capture(e.pointerId);
+				this.viewportEl.addClass("pureref-dragging");
+			}
 			const { x, y, scale } = this.state;
 			this.setState({ x: x + (cur.x - prev.x), y: y + (cur.y - prev.y), scale }, true);
 		} else if (this.pointers.size === 2) {
@@ -232,9 +258,13 @@ export class PanZoom extends Component {
 		}
 		if (this.pointers.size === 0) {
 			this.dragging = false;
+			if (this.dragMoved) this.lastDragEnd = Date.now();
+			this.dragMoved = false;
 			this.viewportEl.removeClass("pureref-dragging");
 		} else if (this.pointers.size === 1) {
+			// Pinch ended with one finger still down: continue as a drag from its current position.
 			this.dragging = true;
+			this.dragMoved = true;
 			this.pinchDistance = 0;
 		}
 	};
