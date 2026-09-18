@@ -13,7 +13,7 @@ export default defineConfig([
 			},
 		},
 		rules: {
-			"obsidianmd/ui/sentence-case": ["warn", { brands: ["PureRef", "Obsidian"] }],
+			"obsidianmd/ui/sentence-case": ["warn", { brands: ["PureRef", "Obsidian", "Markdown"] }],
 			// The declarative settings API needs Obsidian 1.13; this plugin supports 1.7.2+.
 			"obsidianmd/settings-tab/prefer-setting-definitions": "off",
 		},

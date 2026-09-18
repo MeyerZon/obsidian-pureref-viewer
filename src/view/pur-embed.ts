@@ -3,6 +3,7 @@ import type PureRefPlugin from "../main.ts";
 import { parsePur } from "../pur/parser.ts";
 import { clampHeight } from "../settings.ts";
 import type { EmbedContext, EmbedRegistry } from "../types/obsidian-internal.ts";
+import { showBoardContextMenu } from "./board-menu.ts";
 import { BoardRenderer } from "./board-renderer.ts";
 
 /** Parses `height=300&fit=1` style parameters from an embed subpath. */
@@ -94,6 +95,16 @@ export class PurEmbed extends MarkdownRenderChild {
 			background: s.background,
 			initialView: this.params.get("view") === "actual" ? "actual" : "fit",
 			wheelRequiresModifier: true,
+			onContextMenu: (evt, item) => {
+				if (!this.renderer) return;
+				showBoardContextMenu(evt, item, {
+					app: plugin.app,
+					file,
+					board,
+					renderer: this.renderer,
+					exportFolderTemplate: plugin.settings.exportFolderTemplate,
+				});
+			},
 		});
 		this.addChild(this.renderer);
 		this.renderer.load();

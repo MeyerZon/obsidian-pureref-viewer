@@ -1,9 +1,9 @@
 import { Component } from "obsidian";
-import { boardStaticBounds, drawingLocalRect, imageItemRect } from "../pur/bounds.ts";
+import { boardStaticBounds, drawingLocalRect, imageCropRect, imageItemRect } from "../pur/bounds.ts";
 import type { Board, DrawingItem, ImageItem, ImageResource, Item, NoteItem } from "../pur/model.ts";
 import { IMAGE_FLAG_BILINEAR, IMAGE_FLAG_GRAYSCALE, STROKE_STYLE_DASHED, STROKE_STYLE_FLAT } from "../pur/model.ts";
 import { isAxisAlignedRectPath, painterPathToSvg, qtColorToCss, rgbaToCss } from "../pur/qt.ts";
-import { apply, fmt, invert, toCssMatrix, transformRect, unionRect, type Rect } from "../pur/transform.ts";
+import { apply, fmt, invert, toCssMatrix, unionRect, type Rect } from "../pur/transform.ts";
 import type { BoardBackground, InitialView } from "../settings.ts";
 import { renderNoteHtml } from "./note-html.ts";
 import { PanZoom, type PanZoomState } from "./panzoom.ts";
@@ -17,6 +17,8 @@ export interface RendererOptions {
 	/** Restores a previously saved view instead of applying `initialView`. */
 	initialState?: PanZoomState | null;
 	onViewChange?: (state: PanZoomState) => void;
+	/** Right-click on an item (or the canvas when `item` is null). */
+	onContextMenu?: (evt: MouseEvent, item: Item | null) => void;
 }
 
 const MIN_SCALE = 0.002;
@@ -69,6 +71,7 @@ export class BoardRenderer extends Component {
 		this.addChild(this.panzoom);
 		// Guarantee the controller is live even if this component was attached to an unloaded parent.
 		this.panzoom.load();
+		this.registerDomEvent(this.viewportEl, "contextmenu", (e) => this.options.onContextMenu?.(e, null));
 
 		let rendered = 0;
 		const failures: string[] = [];
@@ -259,6 +262,11 @@ export class BoardRenderer extends Component {
 		const styles: Partial<CSSStyleDeclaration> = { transform };
 		if (item.opacity < 1) styles.opacity = String(item.opacity);
 		el.setCssStyles(styles);
+		this.registerDomEvent(el, "contextmenu", (e) => {
+			if (!this.options.onContextMenu) return;
+			e.stopPropagation();
+			this.options.onContextMenu(e, item);
+		});
 		return el;
 	}
 
@@ -309,13 +317,11 @@ export class BoardRenderer extends Component {
 		const inv = invert(item.imageTransform);
 		if (!inv) return "";
 		if (isAxisAlignedRectPath(item.bounds)) {
-			const r = transformRect(inv, item.boundsRect);
-			const top = Math.max(0, r.y);
-			const left = Math.max(0, r.x);
-			const right = Math.max(0, width - (r.x + r.width));
-			const bottom = Math.max(0, height - (r.y + r.height));
-			if (top < 0.5 && left < 0.5 && right < 0.5 && bottom < 0.5) return "";
-			return `inset(${fmt(top)}px ${fmt(right)}px ${fmt(bottom)}px ${fmt(left)}px)`;
+			const r = imageCropRect(item, width, height);
+			if (!r) return "";
+			const right = width - (r.x + r.width);
+			const bottom = height - (r.y + r.height);
+			return `inset(${fmt(r.y)}px ${fmt(right)}px ${fmt(bottom)}px ${fmt(r.x)}px)`;
 		}
 		const mapped = {
 			...item.bounds,

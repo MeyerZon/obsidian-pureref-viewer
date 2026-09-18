@@ -195,7 +195,8 @@ export class PanZoom extends Component {
 
 	private readonly onPointerDown = (e: PointerEvent): void => {
 		if (e.button !== 0 && e.button !== 1) return;
-		if ((e.target as HTMLElement | null)?.closest?.("button, a, input")) return;
+		// Notes are text-selectable: a drag that starts on one selects text instead of panning.
+		if ((e.target as HTMLElement | null)?.closest?.("button, a, input, .pureref-note")) return;
 		if (e.button === 1) e.preventDefault();
 		this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 		if (this.pointers.size === 1) {

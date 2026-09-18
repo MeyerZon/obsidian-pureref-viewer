@@ -123,6 +123,9 @@
 	white-space: pre-wrap;
 	overflow-wrap: break-word;
 	box-sizing: border-box;
+	user-select: text;
+	-webkit-user-select: text;
+	cursor: text;
 }
 
 .pureref-note-comfortable {

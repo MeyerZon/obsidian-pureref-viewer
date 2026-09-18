@@ -3,7 +3,28 @@
  * Notes need layout measurement and are handled by the renderer.
  */
 import type { Board, DrawingItem, ImageItem, Item } from "./model.ts";
-import { apply, boundsOfPoints, inflateRect, transformRect, unionRect, type Rect } from "./transform.ts";
+import { apply, boundsOfPoints, inflateRect, invert, transformRect, unionRect, type Rect } from "./transform.ts";
+
+/**
+ * The visible crop of an image item in image-pixel space (origin at the image's top-left),
+ * or null when the item shows the whole image.
+ */
+export function imageCropRect(item: ImageItem, width: number, height: number): Rect | null {
+	const inv = invert(item.imageTransform);
+	if (!inv || width <= 0 || height <= 0) return null;
+	const r = transformRect(inv, item.boundsRect);
+	const x0 = clamp(r.x, 0, width);
+	const y0 = clamp(r.y, 0, height);
+	const x1 = clamp(r.x + r.width, 0, width);
+	const y1 = clamp(r.y + r.height, 0, height);
+	if (x1 - x0 <= 0 || y1 - y0 <= 0) return null;
+	if (x0 < 0.5 && y0 < 0.5 && width - x1 < 0.5 && height - y1 < 0.5) return null;
+	return { x: x0, y: y0, width: x1 - x0, height: y1 - y0 };
+}
+
+function clamp(n: number, lo: number, hi: number): number {
+	return Math.min(hi, Math.max(lo, n));
+}
 
 /** Axis-aligned scene rect of an image item's visible (cropped) area. */
 export function imageItemRect(item: ImageItem): Rect {

@@ -3,6 +3,7 @@ import type PureRefPlugin from "../main.ts";
 import type { Board } from "../pur/model.ts";
 import { parsePur } from "../pur/parser.ts";
 import { canOpenExternally, openInDefaultApp } from "../util/open-external.ts";
+import { showBoardContextMenu } from "./board-menu.ts";
 import { BoardRenderer } from "./board-renderer.ts";
 import { isPanZoomState, type PanZoomState } from "./panzoom.ts";
 
@@ -104,6 +105,16 @@ export class PurFileView extends FileView {
 				wheelRequiresModifier: false,
 				initialState: this.pendingState,
 				onViewChange: () => this.app.workspace.requestSaveLayout(),
+				onContextMenu: (evt, item) => {
+					if (!this.renderer) return;
+					showBoardContextMenu(evt, item, {
+						app: this.app,
+						file,
+						board,
+						renderer: this.renderer,
+						exportFolderTemplate: this.plugin.settings.exportFolderTemplate,
+					});
+				},
 			});
 			this.pendingState = null;
 			this.addChild(this.renderer);

@@ -12,6 +12,8 @@ View [PureRef](https://www.pureref.com/) reference boards (`.pur`) inside Obsidi
 
 Controls: drag to pan, wheel to zoom (in embeds: Ctrl/Cmd+wheel), double-click an image to frame it, pinch on touch screens.
 
+Getting content out: right-click an image for "Copy image" (PNG, cropped as shown on the board), "Save image to vault" and "Copy image source path"; right-click a note for "Copy text" and "Copy as Markdown". Text inside notes is selectable, so drag across a note to select and Ctrl/Cmd+C to copy. Because dragging on a note selects text, pan by dragging the canvas or an image instead.
+
 ## Supported files
 
 PureRef 2.x boards (format `2.0`–`2.2`, tested with 2.1.3). PureRef 1.x boards are rejected with a message; open and re-save them in PureRef 2 to convert.

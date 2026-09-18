@@ -5,7 +5,7 @@ import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
-import { boardStaticBounds, imageItemRect } from "../src/pur/bounds.ts";
+import { boardStaticBounds, imageCropRect, imageItemRect } from "../src/pur/bounds.ts";
 import type { DrawingItem, ImageItem, NoteItem } from "../src/pur/model.ts";
 import { parseHeader, parsePur, reconstructDatabase } from "../src/pur/parser.ts";
 import { isAxisAlignedRectPath, painterPathToSvg } from "../src/pur/qt.ts";
@@ -188,6 +188,24 @@ test("image items: bounds are uncropped full rects and image transforms are cent
 	const bounds = boardStaticBounds(board);
 	assert.ok(bounds);
 	assert.ok(bounds.x < -7000 && bounds.width > 10_000, `content bounds look plausible: ${JSON.stringify(bounds)}`);
+});
+
+test("image crop rect: null for uncropped items, pixel rect for a synthetic crop", { skip: !haveFixture }, () => {
+	const board = parsePur(fixture());
+	const images = board.items.filter((i): i is ImageItem => i.kind === "image");
+	for (const it of images) {
+		const img = board.images.get(it.imageId);
+		assert.ok(img);
+		assert.equal(imageCropRect(it, img.width, img.height), null);
+	}
+	const first = images[0] as ImageItem;
+	const img = board.images.get(first.imageId);
+	assert.ok(img);
+	const cropped: ImageItem = {
+		...first,
+		boundsRect: { x: -img.width / 2 + 100, y: -img.height / 2 + 50, width: 300, height: 200 },
+	};
+	assert.deepEqual(imageCropRect(cropped, img.width, img.height), { x: 100, y: 50, width: 300, height: 200 });
 });
 
 test("notes: rich text and sizing", { skip: !haveFixture }, () => {
